@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  /* Paleta VEGA STUDIO: fondo cálido claro, tinta casi negra y un
+     acento terracota sofisticado (sin saturaciones fuertes). */
+  --background: #f7f5f3;
+  --foreground: #1c1b1a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-ink: #1c1b1a;
+  --color-surface: #ffffff;
+  --color-muted: #6b6560;
+  --color-line: #e7e2de;
+  --color-accent: #9c6b4f;
+  --color-accent-soft: #f1e4db;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
