@@ -2,4 +2,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home1/wjehermy/sistema.tatyvega.com/
-    - /bin/cp -R * $DEPLOYPATH
+    - npm install
+    - npm run build
+    - /bin/cp -R out/* $DEPLOYPATH
