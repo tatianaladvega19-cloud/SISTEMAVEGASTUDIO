@@ -5,13 +5,30 @@ import { useActionState } from "react";
 import FormField, { fieldControlClass } from "./FormField";
 import { createClientAction } from "@/app/(dashboard)/clientes/nuevo/actions";
 import { initialCreateClientState } from "@/app/(dashboard)/clientes/nuevo/form-state";
+import type { CreateClientFormState } from "@/app/(dashboard)/clientes/nuevo/form-state";
 import { CLIENT_SOURCE_OPTIONS } from "@/lib/utils/format";
+import type { Client } from "@/lib/types";
 
-export default function ClientForm() {
-  const [state, formAction, pending] = useActionState(
-    createClientAction,
-    initialCreateClientState
-  );
+interface ClientFormProps {
+  /** Presente en modo edición: ajusta el texto del botón y el enlace de cancelar. */
+  client?: Client;
+  /** Server Action a invocar. Por defecto, crear cliente nuevo. */
+  action?: (
+    prevState: CreateClientFormState,
+    formData: FormData
+  ) => Promise<CreateClientFormState>;
+  /** Estado inicial del formulario. Por defecto, campos vacíos (alta). */
+  initialState?: CreateClientFormState;
+}
+
+export default function ClientForm({
+  client,
+  action = createClientAction,
+  initialState = initialCreateClientState,
+}: ClientFormProps) {
+  const [state, formAction, pending] = useActionState(action, initialState);
+  const submitLabel = client ? "Guardar cambios" : "Guardar cliente";
+  const cancelHref = client ? `/clientes/${client.id}` : "/clientes";
 
   return (
     <form action={formAction} className="space-y-6">
@@ -120,7 +137,7 @@ export default function ClientForm() {
 
       <div className="flex justify-end gap-3">
         <Link
-          href="/clientes"
+          href={cancelHref}
           className="inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-background"
         >
           Cancelar
@@ -130,7 +147,7 @@ export default function ClientForm() {
           disabled={pending}
           className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {pending ? "Guardando..." : "Guardar cliente"}
+          {pending ? "Guardando..." : submitLabel}
         </button>
       </div>
     </form>

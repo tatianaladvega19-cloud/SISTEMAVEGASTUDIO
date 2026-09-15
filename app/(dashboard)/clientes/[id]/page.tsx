@@ -21,7 +21,7 @@ interface ClientePageProps {
 export default async function ClientePage({ params }: ClientePageProps) {
   const { id } = await params;
 
-  const client = getClientById(id);
+  const client = await getClientById(id);
 
   if (!client) {
     notFound();

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import { formatClientSource, formatDate } from "@/lib/utils/format";
 import type { Client } from "@/lib/types";
@@ -18,6 +19,14 @@ export default function ClientInfoCard({ client }: ClientInfoCardProps) {
 
   return (
     <DashboardCard title="Información general">
+      <div className="mb-4 flex justify-end">
+        <Link
+          href={`/clientes/${client.id}/editar`}
+          className="text-sm font-medium text-accent hover:underline"
+        >
+          Editar
+        </Link>
+      </div>
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {fields.map(
           (field) =>

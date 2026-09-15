@@ -18,6 +18,13 @@
   --color-accent: #9c6b4f;
   --color-accent-soft: #f1e4db;
 
+  /* Franja ocupada en la Agenda: verde suave, coherente con el
+     emerald ya usado para el estado "Confirmada" de las citas. */
+  --color-occupied: #eaf6ec;
+  --color-occupied-hover: #dcf0e0;
+  --color-occupied-border: #bfe2c6;
+  --color-occupied-strong: #2f7a44;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

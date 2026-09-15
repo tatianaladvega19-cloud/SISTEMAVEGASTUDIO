@@ -20,15 +20,14 @@ export async function createClientAction(
     source: String(formData.get("source") ?? "INSTAGRAM") as ClientSource,
   };
 
-  const errors = validateClientFields(values, (cedula) =>
-    isCedulaTaken(cedula)
-  );
+  const cedulaTaken = await isCedulaTaken(values.cedula);
+  const errors = validateClientFields(values, () => cedulaTaken);
 
   if (Object.keys(errors).length > 0) {
     return { errors, values };
   }
 
-  const client = createClient({
+  const client = await createClient({
     fullName: values.fullName,
     cedula: values.cedula,
     phone: values.phone,

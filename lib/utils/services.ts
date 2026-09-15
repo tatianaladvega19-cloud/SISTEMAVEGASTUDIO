@@ -40,6 +40,27 @@ export function getCategoriesWithServiceCount(
   }));
 }
 
+// El formulario de Servicio solo debe ofrecer categorías activas (una
+// categoría desactivada no debería poder asignarse a servicios
+// nuevos), pero si el servicio que se edita ya apunta a una categoría
+// que fue desactivada después, esa categoría debe seguir apareciendo
+// en el select para no perder la relación category_id existente ni
+// forzar un cambio de categoría no solicitado.
+export function getSelectableCategoriesForService(
+  categories: ServiceCategory[],
+  currentCategoryId?: string
+): ServiceCategory[] {
+  const activeCategories = categories.filter((category) => category.isActive);
+
+  const currentCategory =
+    currentCategoryId &&
+    !activeCategories.some((category) => category.id === currentCategoryId)
+      ? categories.find((category) => category.id === currentCategoryId)
+      : undefined;
+
+  return currentCategory ? [...activeCategories, currentCategory] : activeCategories;
+}
+
 // ---------------------------------------------------------------------------
 // Métricas del resumen superior
 // ---------------------------------------------------------------------------

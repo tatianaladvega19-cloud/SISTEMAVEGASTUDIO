@@ -26,6 +26,19 @@ export function IconDashboard({ className }: IconProps) {
   );
 }
 
+export function IconAgenda({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="5.5" width="16" height="15" rx="1.6" />
+      <line x1="4" y1="9.8" x2="20" y2="9.8" />
+      <line x1="8" y1="3.5" x2="8" y2="7" />
+      <line x1="16" y1="3.5" x2="16" y2="7" />
+      <line x1="7.5" y1="14" x2="10.5" y2="14" />
+      <line x1="13.5" y1="14" x2="16.5" y2="14" />
+    </svg>
+  );
+}
+
 export function IconClients({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
@@ -44,6 +57,18 @@ export function IconServices({ className }: IconProps) {
       <circle cx="6" cy="18" r="2.5" />
       <line x1="19.5" y1="4.5" x2="8" y2="16" />
       <line x1="8" y1="8" x2="19.5" y2="19.5" />
+    </svg>
+  );
+}
+
+export function IconProfessionals({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="5" width="16" height="14" rx="2" />
+      <circle cx="9.5" cy="11" r="2.2" />
+      <line x1="14" y1="9.5" x2="17.5" y2="9.5" />
+      <line x1="14" y1="12.5" x2="17.5" y2="12.5" />
+      <line x1="7" y1="16" x2="17" y2="16" />
     </svg>
   );
 }
@@ -147,6 +172,15 @@ export function IconCheck({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
       <path d="M4.5 12.5l5 5 10-11" />
+    </svg>
+  );
+}
+
+export function IconBell({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 10.5a6 6 0 0 1 12 0c0 3.4 1 5 1.8 6.1a.9.9 0 0 1-.7 1.4H4.9a.9.9 0 0 1-.7-1.4C5 15.5 6 13.9 6 10.5Z" />
+      <path d="M10 19.8a2 2 0 0 0 4 0" />
     </svg>
   );
 }

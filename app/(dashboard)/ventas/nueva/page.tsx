@@ -11,8 +11,8 @@ import { getServicesWithCategory } from "@/lib/utils/services";
 // no puede quedar cacheada de forma estática.
 export const dynamic = "force-dynamic";
 
-export default function NuevaVentaPage() {
-  const clients = getAllClients();
+export default async function NuevaVentaPage() {
+  const clients = await getAllClients();
   const activeCategories = mockServiceCategories.filter(
     (category) => category.isActive
   );

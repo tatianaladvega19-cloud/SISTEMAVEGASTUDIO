@@ -6,6 +6,7 @@ import { allNavItems } from "./nav-items";
 import { IconMenu } from "./icons";
 import { useSession } from "@/lib/auth/session-context";
 import Avatar from "@/components/ui/Avatar";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -52,15 +53,19 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         </div>
       </div>
 
-      <Link
-        href="/perfil"
-        className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-black/5"
-      >
-        <span className="hidden text-sm font-medium text-ink sm:block">
-          {user.name}
-        </span>
-        <Avatar name={user.name} avatarUrl={user.avatarUrl} size="sm" />
-      </Link>
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+
+        <Link
+          href="/perfil"
+          className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-black/5"
+        >
+          <span className="hidden text-sm font-medium text-ink sm:block">
+            {user.name}
+          </span>
+          <Avatar name={user.name} avatarUrl={user.avatarUrl} size="sm" />
+        </Link>
+      </div>
     </header>
   );
 }

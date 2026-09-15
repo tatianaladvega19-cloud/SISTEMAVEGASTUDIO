@@ -5,6 +5,10 @@
 import { Role } from "./types";
 
 export interface Permisos {
+  agenda: {
+    ver: boolean;
+    gestionar: boolean;
+  };
   clientes: {
     ver: boolean;
     buscar: boolean;
@@ -14,6 +18,9 @@ export interface Permisos {
     eliminar: boolean;
   };
   servicios: {
+    administrar: boolean;
+  };
+  profesionales: {
     administrar: boolean;
   };
   ventas: {
@@ -39,8 +46,10 @@ export interface Permisos {
 export const PERMISOS_POR_ROL: Record<Role, Permisos> = {
   // ADMIN: control total sobre el sistema.
   ADMIN: {
+    agenda: { ver: true, gestionar: true },
     clientes: { ver: true, buscar: true, crear: true, editar: true, eliminar: true },
     servicios: { administrar: true },
+    profesionales: { administrar: true },
     ventas: { registrar: true, verTodas: true, editarHistorico: true, eliminar: true },
     usuarios: { administrar: true },
     reportes: { ver: true, exportar: true },
@@ -50,8 +59,10 @@ export const PERMISOS_POR_ROL: Record<Role, Permisos> = {
   // puede eliminar registros, tocar el historial de ventas, exportar
   // información ni administrar usuarios/configuración.
   VENDEDOR: {
+    agenda: { ver: true, gestionar: true },
     clientes: { ver: true, buscar: true, crear: true, editar: true, eliminar: false },
     servicios: { administrar: false },
+    profesionales: { administrar: false },
     ventas: { registrar: true, verTodas: false, editarHistorico: false, eliminar: false },
     usuarios: { administrar: false },
     reportes: { ver: false, exportar: false },

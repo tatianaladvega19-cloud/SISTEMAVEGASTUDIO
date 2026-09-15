@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { toggleServiceCategoryActiveAction } from "@/app/(dashboard)/servicios/categorias/actions";
 import type { CategoryWithServiceCount } from "@/lib/utils/services";
 
 interface CategoryOverviewProps {
@@ -5,6 +7,19 @@ interface CategoryOverviewProps {
 }
 
 export default function CategoryOverview({ categories }: CategoryOverviewProps) {
+  if (categories.length === 0) {
+    return (
+      <div className="rounded-xl border border-line bg-surface p-10 text-center">
+        <p className="text-sm font-medium text-ink">
+          Todavía no hay categorías
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Crea la primera categoría para poder asignarla a tus servicios.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {categories.map((category) => (
@@ -34,6 +49,29 @@ export default function CategoryOverview({ categories }: CategoryOverviewProps) 
             servicio{category.servicesCount === 1 ? "" : "s"} asociado
             {category.servicesCount === 1 ? "" : "s"}
           </p>
+
+          <div className="mt-3 flex items-center gap-3 border-t border-line pt-3">
+            <Link
+              href={`/servicios/categorias/${category.id}/editar`}
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Editar
+            </Link>
+            <form
+              action={toggleServiceCategoryActiveAction.bind(
+                null,
+                category.id,
+                !category.isActive
+              )}
+            >
+              <button
+                type="submit"
+                className="text-xs font-medium text-muted hover:text-ink hover:underline"
+              >
+                {category.isActive ? "Desactivar" : "Activar"}
+              </button>
+            </form>
+          </div>
         </div>
       ))}
     </div>

@@ -98,9 +98,56 @@ export interface Service {
    * conserva su propio precio histórico en SaleItem.unitPrice.
    */
   price: number;
+  /**
+   * Duración típica/sugerida en minutos (columna services.duration).
+   * Nullable en Supabase: queda undefined mientras no se defina. No
+   * reemplaza Appointment.duration, que es la duración elegida al
+   * agendar cada cita puntual.
+   */
+  duration?: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ---------------------------------------------------------------------------
+// Professional
+// ---------------------------------------------------------------------------
+
+// Profesional/empleada que realiza servicios (Camila, Lupita, Vanessa,
+// etc.). Es un concepto distinto de User: User representa cuentas con
+// acceso al sistema (ADMIN/VENDEDOR, para login y permisos), mientras que
+// Professional representa a quien atiende la cita, exista o no como
+// usuario del sistema. Ningún nombre se hardcodea en la lógica: se
+// administran como datos (mismo patrón que ServiceCategory) para poder
+// agregarse, editarse o desactivarse desde Administración sin tocar el
+// resto del módulo de Agenda.
+export interface Professional {
+  id: string;
+  name: string;
+  /** Ej. "Micropigmentación", "Pestañas". Libre, no es un catálogo cerrado. */
+  specialty?: string;
+  phone?: string;
+  email?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ---------------------------------------------------------------------------
+// ServiceProfessional
+// ---------------------------------------------------------------------------
+
+// Relación muchos a muchos entre Service y Professional: un servicio puede
+// ser realizado por una o varias profesionales, y una profesional puede
+// realizar varios servicios. Se modela como tabla de unión (igual que lo
+// haría una base de datos real) en vez de anidar listas dentro de Service
+// o de Professional, para no duplicar esa relación en dos lugares.
+export interface ServiceProfessional {
+  /** Service.id */
+  serviceId: string;
+  /** Professional.id */
+  professionalId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,6 +199,173 @@ export interface SaleItem {
   unitPrice: number;
   quantity: number;
   subtotal: number;
+}
+
+// ---------------------------------------------------------------------------
+// Appointment
+// ---------------------------------------------------------------------------
+
+export type AppointmentStatus =
+  | "PROGRAMADA"
+  | "CONFIRMADA"
+  | "COMPLETADA"
+  | "CANCELADA";
+
+// ---------------------------------------------------------------------------
+// AppointmentReminder
+// ---------------------------------------------------------------------------
+//
+// Estructura de datos preparada para el futuro envío de recordatorios
+// automáticos de citas. Todavía NO existe integración con ningún
+// proveedor externo (WhatsApp/email/SMS): por ahora solo se calcula
+// cuándo debería dispararse cada recordatorio y a quién, y se deja el
+// campo de estado en "PENDIENTE" para que un futuro job/cron lo
+// actualice al enviarlo de verdad.
+
+/** Momento del recordatorio relativo a la hora de la cita. */
+export type NotificationTiming = "24H_ANTES" | "1H_ANTES";
+
+/**
+ * A quién debe llegar el recordatorio. Arquitectura definitiva de VEGA
+ * STUDIO (ver supabase/migrations/20260909201050_initial_vega_studio_schema.sql,
+ * tabla appointment_reminders): los recordatorios 24h/1h son
+ * exclusivos de la CLIENTA. La administradora solo recibe el aviso
+ * inmediato al crear la cita (columnas admin_notification_* de
+ * Appointment más abajo), nunca un recordatorio programado.
+ */
+export type NotificationRecipientRole = "CLIENTA";
+
+/** Canal por el que se envía el recordatorio. Único canal soportado: WhatsApp (Twilio). */
+export type NotificationChannel = "WHATSAPP";
+
+// PROGRAMADA: Twilio Message Scheduling aceptó el envío para
+// `scheduledFor` (ver lib/notifications/twilio.ts). CANCELADA: la cita
+// se reprogramó o canceló antes de que Twilio llegara a enviarlo.
+export type NotificationStatus =
+  | "PENDIENTE"
+  | "PROGRAMADA"
+  | "ENVIADA"
+  | "FALLIDA"
+  | "CANCELADA";
+
+export interface AppointmentReminder {
+  id: string;
+  /** Appointment.id */
+  appointmentId: string;
+  timing: NotificationTiming;
+  recipientRole: NotificationRecipientRole;
+  /** Sin asignar mientras no exista un proveedor de envío configurado. */
+  channel?: NotificationChannel;
+  status: NotificationStatus;
+  /** Fecha/hora calculada en la que debería dispararse el envío. */
+  scheduledFor: Date;
+  sentAt?: Date;
+  /**
+   * SID del mensaje programado en Twilio (equivalente a
+   * reminder24hId/reminder1hId), necesario para poder cancelarlo si la
+   * cita se reprograma o cancela (ver PASO 12/13). Solo se asigna
+   * cuando Twilio confirma la programación.
+   */
+  providerMessageId?: string;
+}
+
+export interface Appointment {
+  id: string;
+  /** Client.id */
+  clientId: string;
+  /**
+   * Copia histórica del nombre del cliente en el momento de agendar.
+   * Se guarda aparte porque Client.fullName puede cambiar después
+   * (mismo patrón que SaleItem.serviceName con Service.name).
+   */
+  clientName: string;
+  /** Service.id */
+  serviceId: string;
+  /** Copia histórica del nombre del servicio en el momento de agendar. */
+  serviceName: string;
+  /** Professional.id de quien atiende la cita. */
+  professionalId: string;
+  /**
+   * Copia histórica del nombre de la profesional en el momento de
+   * agendar. Se guarda aparte porque Professional.name puede cambiar
+   * después (mismo patrón que clientName/serviceName).
+   */
+  professionalName: string;
+  /** Fecha de la cita, formato "YYYY-MM-DD". */
+  date: string;
+  /** Hora de inicio, formato "HH:mm" (una de AGENDA_HOURS). */
+  time: string;
+  /** Duración en minutos. */
+  duration: number;
+  status: AppointmentStatus;
+  notes?: string;
+  /**
+   * Recordatorios asociados a esta cita (24h y 1h antes, para
+   * administradora y clienta). Se generan al crear la cita mediante
+   * `buildAppointmentReminders` (lib/utils/notifications.ts). El envío
+   * real todavía no está implementado; esto solo deja preparada la
+   * estructura para conectarlo después.
+   */
+  reminders: AppointmentReminder[];
+  /**
+   * SID del WhatsApp de confirmación enviado a la clienta al crear la
+   * cita (ver lib/notifications/appointment-notifications.ts). Su
+   * presencia es lo que evita reenviar la confirmación dos veces
+   * (idempotencia, PASO 17).
+   */
+  confirmationMessageId?: string;
+  confirmationStatus?: NotificationStatus;
+  /** Mensaje de error de Twilio si el envío falló. Nunca credenciales. */
+  confirmationError?: string;
+  /** SID del WhatsApp de aviso enviado a la administradora al crear la cita. */
+  adminNotificationMessageId?: string;
+  adminNotificationStatus?: NotificationStatus;
+  adminNotificationError?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ---------------------------------------------------------------------------
+// InternalAlert (centro de notificaciones interno)
+// ---------------------------------------------------------------------------
+//
+// Alertas mostradas en el centro de notificaciones de VEGA STUDIO (ver
+// components/notifications/NotificationBell.tsx). Se generan como
+// efecto secundario de los eventos de Agenda (crear/reprogramar/
+// cancelar cita, envíos de WhatsApp), nunca las crea el usuario a mano.
+
+export type AlertType =
+  | "APPOINTMENT_CREATED"
+  | "APPOINTMENT_RESCHEDULED"
+  | "APPOINTMENT_CANCELLED"
+  | "REMINDER"
+  | "WHATSAPP_SENT"
+  | "WHATSAPP_FAILED";
+
+export type AlertPriority = "LOW" | "NORMAL" | "HIGH";
+
+export interface InternalAlert {
+  id: string;
+  type: AlertType;
+  title: string;
+  message: string;
+  /** Appointment.id relacionada, si aplica. */
+  appointmentId?: string;
+  /** Client.id relacionado, si aplica. */
+  clientId?: string;
+  createdAt: Date;
+  read: boolean;
+  priority: AlertPriority;
+}
+
+/** Datos necesarios para crear una alerta (ver lib/data/alerts-store.ts). */
+export interface NewAlertInput {
+  type: AlertType;
+  title: string;
+  message: string;
+  appointmentId?: string;
+  clientId?: string;
+  priority: AlertPriority;
 }
 
 // ---------------------------------------------------------------------------

@@ -10,8 +10,10 @@ import type { ComponentType } from "react";
 import type { Permisos } from "@/lib/permissions";
 import {
   IconDashboard,
+  IconAgenda,
   IconClients,
   IconServices,
+  IconProfessionals,
   IconSales,
   IconReports,
   IconUsers,
@@ -28,6 +30,12 @@ export interface NavItem {
 export const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: IconDashboard },
   {
+    label: "Agenda",
+    href: "/agenda",
+    icon: IconAgenda,
+    isVisible: (p) => p.agenda.ver,
+  },
+  {
     label: "Clientes",
     href: "/clientes",
     icon: IconClients,
@@ -38,6 +46,12 @@ export const mainNavItems: NavItem[] = [
     href: "/servicios",
     icon: IconServices,
     isVisible: (p) => p.servicios.administrar,
+  },
+  {
+    label: "Profesionales",
+    href: "/profesionales",
+    icon: IconProfessionals,
+    isVisible: (p) => p.profesionales.administrar,
   },
   {
     label: "Ventas",

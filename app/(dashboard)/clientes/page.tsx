@@ -8,8 +8,8 @@ import { getAllClients } from "@/lib/data/clients-store";
 // quedar cacheada de forma estática.
 export const dynamic = "force-dynamic";
 
-export default function ClientesPage() {
-  const clients = getAllClients();
+export default async function ClientesPage() {
+  const clients = await getAllClients();
 
   return (
     <div>

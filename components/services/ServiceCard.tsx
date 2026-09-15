@@ -1,5 +1,7 @@
+import Link from "next/link";
 import ServiceStatusBadge from "./ServiceStatusBadge";
 import { formatCurrency } from "@/lib/utils/format";
+import { toggleServiceActiveAction } from "@/app/(dashboard)/servicios/actions";
 import type { ServiceWithCategory } from "@/lib/utils/services";
 
 interface ServiceCardProps {
@@ -26,18 +28,26 @@ export default function ServiceCard({ service }: ServiceCardProps) {
           {formatCurrency(service.price)}
         </p>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <Link
+            href={`/servicios/${service.id}/editar`}
             className="text-xs font-medium text-accent hover:underline"
           >
             Editar
-          </button>
-          <button
-            type="button"
-            className="text-xs font-medium text-muted hover:text-ink hover:underline"
+          </Link>
+          <form
+            action={toggleServiceActiveAction.bind(
+              null,
+              service.id,
+              !service.isActive
+            )}
           >
-            {service.isActive ? "Desactivar" : "Activar"}
-          </button>
+            <button
+              type="submit"
+              className="text-xs font-medium text-muted hover:text-ink hover:underline"
+            >
+              {service.isActive ? "Desactivar" : "Activar"}
+            </button>
+          </form>
         </div>
       </div>
     </div>

@@ -45,7 +45,7 @@ export async function createSaleAction(
     return { success: false, error: firstError };
   }
 
-  const client = getClientById(input.clientId as string);
+  const client = await getClientById(input.clientId as string);
   if (!client) {
     return { success: false, error: "El cliente seleccionado ya no existe." };
   }

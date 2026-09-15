@@ -13,10 +13,10 @@ import { formatCurrency } from "@/lib/utils/format";
 // cacheada de forma estática.
 export const dynamic = "force-dynamic";
 
-export default function VentasPage() {
+export default async function VentasPage() {
   const sales = getAllSales();
   const saleItems = getAllSaleItems();
-  const clients = getAllClients();
+  const clients = await getAllClients();
 
   const metrics = getSalesMetrics(sales, saleItems);
   const salesWithDetails = getSalesWithDetails(
