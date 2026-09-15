@@ -34,8 +34,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const visibleMainItems = getVisibleNavItems(mainNavItems, permisos);
   const visibleAdminItems = getVisibleNavItems(adminNavItems, permisos);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.replace("/login");
   };
 

@@ -1,15 +1,11 @@
 "use client";
 
-// Provider de sesión simulada. Mantiene en memoria (y respaldado en
-// localStorage, solo para no perder la selección al recargar) qué
-// usuario mock está "logueado", y lo expone a todo el árbol mediante
-// `useSession()`. Sidebar y Topbar lo consumen para mostrar el usuario
-// activo; el layout de (dashboard) lo consume para exigir sesión.
-//
-// Esto es una simulación de UI, no seguridad real: cualquiera puede
-// editar localStorage. Cuando exista autenticación real, esta es la
-// pieza a reemplazar (por ejemplo por un provider respaldado en
-// cookies de servidor), manteniendo la misma forma de `useSession()`.
+// Provider de sesión real de VEGA STUDIO, respaldado por Supabase Auth.
+// Mantiene en memoria al usuario autenticado (perfil de `profiles`
+// mapeado desde la sesión de Supabase) y lo expone a todo el árbol
+// mediante `useSession()`. Sidebar y Topbar lo consumen para mostrar el
+// usuario activo; el layout de (dashboard) lo consume para exigir
+// sesión.
 
 import {
   createContext,
@@ -21,23 +17,21 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@/lib/types";
-import {
-  findUserById,
-  readStoredUserId,
-  writeStoredUserId,
-} from "./session";
-import { saveProfileOverride, type ProfileOverride } from "./profile";
+import { createClient } from "@/lib/supabase/client";
+import { fetchProfile } from "./session";
+import { saveProfileOverride, applyProfileOverride, type ProfileOverride } from "./profile";
 
 interface SessionContextValue {
-  /** Usuario simulado activo, o null si no hay sesión iniciada. */
+  /** Usuario autenticado activo, o null si no hay sesión iniciada. */
   user: User | null;
   /**
-   * false mientras todavía no se leyó la sesión persistida (evita
+   * false mientras todavía no se resolvió la sesión de Supabase (evita
    * redirigir a /login antes de saber si en realidad hay sesión).
    */
   isReady: boolean;
-  login: (userId: string) => void;
-  logout: () => void;
+  /** Intenta iniciar sesión contra Supabase Auth. Devuelve un mensaje de error legible, o null si fue exitoso. */
+  login: (email: string, password: string) => Promise<string | null>;
+  logout: () => Promise<void>;
   /**
    * Actualiza los datos de perfil del usuario activo (nombre, username,
    * email, avatar). Es la única forma de mutar el usuario actual: el
@@ -51,25 +45,69 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<User | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const storedId = readStoredUserId();
-    setUser(storedId ? findUserById(storedId) ?? null : null);
-    setIsReady(true);
-  }, []);
+    let active = true;
 
-  const login = useCallback((userId: string) => {
-    const nextUser = findUserById(userId) ?? null;
-    setUser(nextUser);
-    writeStoredUserId(nextUser?.id ?? null);
-  }, []);
+    const resolveUser = async (userId: string | undefined) => {
+      if (!userId) {
+        if (active) setUser(null);
+        return;
+      }
+      const profile = await fetchProfile(supabase, userId);
+      if (active) setUser(profile ? applyProfileOverride(profile) : null);
+    };
 
-  const logout = useCallback(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      resolveUser(data.session?.user.id).finally(() => {
+        if (active) setIsReady(true);
+      });
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      resolveUser(session?.user.id);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const login = useCallback(
+    async (email: string, password: string): Promise<string | null> => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return "Correo o contraseña incorrectos.";
+      }
+
+      const profile = await fetchProfile(supabase, data.user.id);
+      if (!profile) {
+        await supabase.auth.signOut();
+        return "Tu cuenta no tiene un perfil asignado. Contacta a un administrador.";
+      }
+      if (!profile.isActive) {
+        await supabase.auth.signOut();
+        return "Esta cuenta está inactiva. Contacta a un administrador.";
+      }
+
+      setUser(applyProfileOverride(profile));
+      return null;
+    },
+    [supabase]
+  );
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    writeStoredUserId(null);
-  }, []);
+  }, [supabase]);
 
   const updateCurrentUser = useCallback((updates: ProfileOverride) => {
     setUser((current) => {

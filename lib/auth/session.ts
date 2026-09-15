@@ -1,18 +1,14 @@
-// Sesión simulada de VEGA STUDIO.
+// Sesión real de VEGA STUDIO, respaldada por Supabase Auth.
 //
-// No hay autenticación real todavía: esto solo recuerda qué usuario de
-// `lib/mocks/users.ts` fue "seleccionado" en /login, para poder probar
-// el flujo completo (login -> dashboard según rol -> logout).
-//
-// El día que se conecte autenticación real, este módulo es el punto a
-// reemplazar: la forma de consumirlo (SessionProvider/useSession) puede
-// mantenerse igual mientras cambia lo que hay detrás.
+// Supabase Auth guarda quién inició sesión (email/contraseña, token,
+// persistencia entre recargas); este módulo solo se encarga de la
+// mitad que Supabase no sabe: mapear ese usuario autenticado a su fila
+// en `profiles` (nombre, username, rol) para el resto de la app
+// (Sidebar, Topbar, permisos por rol, etc.). Ver session-context.tsx
+// para cómo se conecta esto con supabase.auth.
 
-import { mockUsers } from "@/lib/mocks/users";
-import { applyProfileOverride } from "./profile";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Role, User } from "@/lib/types";
-
-export const SESSION_STORAGE_KEY = "vega-studio:session-user-id";
 
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
@@ -29,38 +25,48 @@ export function getInitials(name: string): string {
   return initials.join("") || "?";
 }
 
-export function findUserByEmail(email: string): User | undefined {
-  const normalized = email.trim().toLowerCase();
-  const user = mockUsers
-    .map(applyProfileOverride)
-    .find((user) => user.email.toLowerCase() === normalized);
-  return user;
+interface ProfileRow {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: Role;
+  active: boolean;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export function findUserById(id: string): User | undefined {
-  const user = mockUsers.find((user) => user.id === id);
-  return user ? applyProfileOverride(user) : undefined;
+function mapProfileRow(row: ProfileRow): User {
+  return {
+    id: row.id,
+    name: row.name,
+    username: row.username,
+    email: row.email,
+    role: row.role,
+    isActive: row.active,
+    avatarUrl: row.avatar_url ?? undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
 }
 
-export function readStoredUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(SESSION_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
+/**
+ * Busca en `profiles` la fila del usuario autenticado (profiles.id ==
+ * auth.users.id, ver migración 20260915160000). Devuelve null tanto si
+ * no existe la fila (cuenta de Auth sin perfil asignado todavía) como
+ * si la consulta falla por RLS.
+ */
+export async function fetchProfile(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<User | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, name, username, email, role, active, avatar_url, created_at, updated_at")
+    .eq("id", userId)
+    .maybeSingle();
 
-export function writeStoredUserId(userId: string | null): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (userId) {
-      window.localStorage.setItem(SESSION_STORAGE_KEY, userId);
-    } else {
-      window.localStorage.removeItem(SESSION_STORAGE_KEY);
-    }
-  } catch {
-    // Almacenamiento no disponible (modo privado, etc.): la sesión
-    // simulada simplemente no persiste entre recargas.
-  }
+  if (error || !data) return null;
+  return mapProfileRow(data as ProfileRow);
 }
