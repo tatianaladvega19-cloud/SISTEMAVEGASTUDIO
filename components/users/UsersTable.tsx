@@ -8,8 +8,9 @@ import type { User } from "@/lib/types";
 interface UsersTableProps {
   users: User[];
   onEdit: (user: User) => void;
-  onToggleActive: (user: User) => void;
+  onToggleActive: (user: User) => void | Promise<void>;
   onClearFilters: () => void;
+  togglingId?: string | null;
 }
 
 export default function UsersTable({
@@ -17,6 +18,7 @@ export default function UsersTable({
   onEdit,
   onToggleActive,
   onClearFilters,
+  togglingId,
 }: UsersTableProps) {
   if (users.length === 0) {
     return (
@@ -45,6 +47,7 @@ export default function UsersTable({
             user={user}
             onEdit={onEdit}
             onToggleActive={onToggleActive}
+            isToggling={togglingId === user.id}
           />
         ))}
       </div>
@@ -93,9 +96,14 @@ export default function UsersTable({
                     <button
                       type="button"
                       onClick={() => onToggleActive(user)}
-                      className="text-sm font-medium text-muted hover:text-ink hover:underline"
+                      disabled={togglingId === user.id}
+                      className="text-sm font-medium text-muted hover:text-ink hover:underline disabled:opacity-50"
                     >
-                      {user.isActive ? "Desactivar" : "Activar"}
+                      {togglingId === user.id
+                        ? "Guardando..."
+                        : user.isActive
+                        ? "Desactivar"
+                        : "Activar"}
                     </button>
                   </div>
                 </td>

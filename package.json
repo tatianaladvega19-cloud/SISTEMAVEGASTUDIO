@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import ./scripts/register-ts-loader.mjs --test lib/notifications/__tests__/*.test.ts"
+    "test": "node --import ./scripts/register-ts-loader.mjs --test lib/notifications/__tests__/*.test.ts lib/data/__tests__/*.test.ts lib/validations/__tests__/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -15,6 +15,7 @@
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "twilio": "^6.1.0"
   },
   "devDependencies": {

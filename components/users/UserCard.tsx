@@ -6,10 +6,11 @@ import type { User } from "@/lib/types";
 interface UserCardProps {
   user: User;
   onEdit: (user: User) => void;
-  onToggleActive: (user: User) => void;
+  onToggleActive: (user: User) => void | Promise<void>;
+  isToggling?: boolean;
 }
 
-export default function UserCard({ user, onEdit, onToggleActive }: UserCardProps) {
+export default function UserCard({ user, onEdit, onToggleActive, isToggling }: UserCardProps) {
   return (
     <div className="rounded-xl border border-line bg-surface p-4">
       <div className="flex items-start gap-3">
@@ -29,9 +30,10 @@ export default function UserCard({ user, onEdit, onToggleActive }: UserCardProps
         <button
           type="button"
           onClick={() => onToggleActive(user)}
-          className="text-xs font-medium text-muted hover:text-ink hover:underline"
+          disabled={isToggling}
+          className="text-xs font-medium text-muted hover:text-ink hover:underline disabled:opacity-50"
         >
-          {user.isActive ? "Desactivar" : "Activar"}
+          {isToggling ? "Guardando..." : user.isActive ? "Desactivar" : "Activar"}
         </button>
         <button
           type="button"

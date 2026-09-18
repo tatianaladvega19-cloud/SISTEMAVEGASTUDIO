@@ -23,12 +23,18 @@ export interface UserFormSubmitValues {
   password?: string;
 }
 
+export interface UserFormSaveResult {
+  ok: boolean;
+  error?: string;
+  field?: string;
+}
+
 interface UserFormProps {
   mode: "create" | "edit";
   user?: User;
   users: User[];
   onClose: () => void;
-  onSave: (values: UserFormSubmitValues) => void;
+  onSave: (values: UserFormSubmitValues) => Promise<UserFormSaveResult>;
 }
 
 interface FormValues {
@@ -74,6 +80,8 @@ export default function UserForm({
 }: UserFormProps) {
   const [values, setValues] = useState<FormValues>(() => buildInitialValues(user));
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEdit = mode === "edit";
 
@@ -81,9 +89,11 @@ export default function UserForm({
     setValues((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) return;
 
+    setSubmitError(null);
     const nextErrors: FormErrors = {};
     const name = values.name.trim();
     const email = values.email.trim();
@@ -129,7 +139,8 @@ export default function UserForm({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    onSave({
+    setIsSubmitting(true);
+    const result = await onSave({
       name,
       email,
       username,
@@ -137,6 +148,16 @@ export default function UserForm({
       isActive: values.isActive,
       password: wantsPasswordChange ? values.password : undefined,
     });
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      const fieldErrorKeys: (keyof FormErrors)[] = ["name", "email", "username", "password"];
+      if (result.field && fieldErrorKeys.includes(result.field as keyof FormErrors)) {
+        setErrors({ [result.field]: result.error });
+      } else {
+        setSubmitError(result.error ?? "Ocurrió un error inesperado. Intenta nuevamente.");
+      }
+    }
   };
 
   return (
@@ -324,19 +345,31 @@ export default function UserForm({
             </div>
           </div>
 
+          {submitError && (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
+              {submitError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-background"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-background disabled:opacity-60"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {isEdit ? "Guardar cambios" : "Guardar usuario"}
+              {isSubmitting
+                ? "Guardando..."
+                : isEdit
+                ? "Guardar cambios"
+                : "Guardar usuario"}
             </button>
           </div>
         </form>

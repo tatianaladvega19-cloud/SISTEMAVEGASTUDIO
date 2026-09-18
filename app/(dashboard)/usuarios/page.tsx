@@ -1,6 +1,19 @@
+import { redirect } from "next/navigation";
 import UsersExplorer from "@/components/users/UsersExplorer";
-import { mockUsers } from "@/lib/mocks/users";
+import { getAuthenticatedProfile } from "@/lib/auth/require-admin";
+import { listUsers } from "@/lib/data/users-store";
 
-export default function UsuariosPage() {
-  return <UsersExplorer initialUsers={mockUsers} />;
+export default async function UsuariosPage() {
+  const profile = await getAuthenticatedProfile();
+
+  if (!profile) {
+    redirect("/login");
+  }
+  if (profile.role !== "ADMIN" || !profile.isActive) {
+    redirect("/dashboard");
+  }
+
+  const users = await listUsers();
+
+  return <UsersExplorer initialUsers={users} />;
 }
